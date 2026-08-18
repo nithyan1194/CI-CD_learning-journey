@@ -1,0 +1,89 @@
+### How CI Runners Work
+Ephemeral Environment: GitHub spins up a clean, isolated virtual machine (VM) specifically for your job and destroys it as soon as the job finishes.
+
+Hosted vs. Self-Hosted:
+
+GitHub-Hosted Runners: GitHub manages the infrastructure, OS updates, and hardware (e.g., ubuntu-latest, windows-latest, macos-latest).
+
+Self-Hosted Runners: You can attach your own on-premise server or cloud VM to run CI jobs if you need custom hardware or network access to private corporate databases.
+
+Essential Pipeline Building Blocks
+Now that you understand where code runs, let's explore three critical concepts used in real-world CI pipelines:
+
+## 1. Multi-Job Workflows & Dependencies
+Pipelines can have multiple jobs running either in parallel (at the same time to save time) or sequentially (in a specific order).
+
+By default, jobs run in parallel. Use needs to make one job wait for another:
+
+jobs:
+  # Job 1: Run Unit Tests
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+
+  # Job 2: Build Artifact (runs ONLY if 'test' succeeds)
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm run build
+
+
+2. Environment Variables & Secrets ManagementNever put API keys, database passwords, or 
+deploy tokens directly in your repository or YAML files.Store them in GitHub Repository Settings 
+--> Secrets and Variables --> Actions.
+Reference them securely in your workflow:
+
+steps:
+      - name: Deploy to Cloud
+        env:
+          API_KEY: ${{ secrets.PROD_API_KEY }}
+        run: |
+          ./deploy.sh --key "$API_KEY"
+
+3. Build Artifacts
+Because every job runs in a separate, isolated runner, files produced in one job (like a compiled .zip or dist/ folder) do not automatically exist in the next job.
+
+Upload Artifact: Job 1 uploads the compiled bundle.
+
+Download Artifact: Job 2 downloads that bundle to deploy or test it.
+
+# Inside Job 1: Save the build folder
+      - name: Save build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-dist
+          path: dist/
+
+
+Quick Knowledge Check
+Look at this pipeline configuration snippet:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Checking code style"
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running tests"
+
+  deploy:
+    needs: [lint, unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying app"
+
+
+Question: If the lint job passes but the unit-tests job fails, will the deploy job run?
+
+No, the deploy job will not run.
+
+Because deploy defines needs: [lint, unit-tests], GitHub Actions requires all prerequisite jobs in the dependency list to succeed (exit 0). If either lint or unit-tests fails, the pipeline immediately halts downstream jobs to prevent broken code from deploying.
+
+
