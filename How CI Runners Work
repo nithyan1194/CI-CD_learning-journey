@@ -1,11 +1,22 @@
+
+CI/CD Runners Deep Dive
+
+A Runner is the compute engine that listens for jobs, runs your pipeline steps, and reports results back to the server.
+
 ### How CI Runners Work
 Ephemeral Environment: GitHub spins up a clean, isolated virtual machine (VM) specifically for your job and destroys it as soon as the job finishes.
 
-Hosted vs. Self-Hosted:
+GitHub-Hosted Runners:
 
-GitHub-Hosted Runners: GitHub manages the infrastructure, OS updates, and hardware (e.g., ubuntu-latest, windows-latest, macos-latest).
+Managed entirely by GitHub on clean, isolated VMs (ubuntu-latest, windows-latest, macos-latest).
 
-Self-Hosted Runners: You can attach your own on-premise server or cloud VM to run CI jobs if you need custom hardware or network access to private corporate databases.
+Destroyed immediately after every job run (ephemeral), ensuring no leftover state between pipeline runs.
+
+Self-Hosted Runners:
+
+Dedicated physical machines, local servers, or private cloud VMs (AWS EC2, Azure VM) configured to run your jobs.
+
+Use cases: Accessing private internal networks/databases without opening them to the internet, using specialized hardware (e.g., GPUs), or caching large dependencies locally to reduce build time.
 
 Essential Pipeline Building Blocks
 Now that you understand where code runs, let's explore three critical concepts used in real-world CI pipelines:
@@ -32,7 +43,47 @@ jobs:
       - run: npm run build
 
 
-2. Environment Variables & Secrets ManagementNever put API keys, database passwords, or 
+2. Environment Variables & Secrets Management
+
+Real-world applications move through distinct deployment stages, each requiring different configurations, database URLs, and API credentials:
+
+[ Feature Branch ] ──► [ Development (Dev) ] ──► [ Staging (QA / Pre-prod) ] ──► [ Production (Live) ]
+
+
+name: Deploy Application
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    # Links this job to the "production" environment configured in repository settings
+    environment:
+      name: production
+      url: https://api.myapp.com
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloud
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DB_URL }}
+          API_KEY: ${{ secrets.PROD_API_KEY }}
+          APP_PORT: 8080
+        run: |
+          echo "Deploying to production environment..."
+          ./scripts/deploy.sh --db "$DATABASE_URL" --port "$APP_PORT"
+
+Environment Variables vs. Secrets
+Environment Variables (vars or plain text): Non-sensitive configuration values like port numbers (8080), log levels (DEBUG, INFO), or API base URLs ([https://api.myapp.com](https://api.myapp.com)).
+
+Secrets (secrets): Sensitive strings like private SSH keys, cloud provider tokens, and database passwords. Stored encrypted at rest and masked with *** in build logs.
+
+
+Never put API keys, database passwords, or 
 deploy tokens directly in your repository or YAML files.Store them in GitHub Repository Settings 
 --> Secrets and Variables --> Actions.
 Reference them securely in your workflow:
@@ -57,6 +108,7 @@ Download Artifact: Job 2 downloads that bundle to deploy or test it.
         with:
           name: app-dist
           path: dist/
+
 
 
 Quick Knowledge Check
@@ -87,3 +139,19 @@ No, the deploy job will not run.
 Because deploy defines needs: [lint, unit-tests], GitHub Actions requires all prerequisite jobs in the dependency list to succeed (exit 0). If either lint or unit-tests fails, the pipeline immediately halts downstream jobs to prevent broken code from deploying.
 
 
+Quick Scenario Challenge
+You are configuring a deployment job for a critical production system. You want to make sure:
+
+The deployment only proceeds after a senior engineer manually reviews and approves it.
+
+The production database credentials cannot be accessed by feature branch runs.
+
+Which GitHub Actions feature achieves both requirements?
+
+A. Adding runs-on: self-hosted
+
+B. Configuring a GitHub Environment with protection rules and environment-specific secrets
+
+C. Hardcoding the secrets in a .env file and pushing it to Git
+
+answer : B. Configuring a GitHub Environment with protection rules and environment-specific secrets

@@ -40,3 +40,49 @@ Directly inside the .git folder
 Answer:
 On a fresh virtual machine (ubuntu-latest) provided by GitHub is the correct answer.
 In CI/CD terminology, this machine is called a Runner (or agent).
+
+Quick Knowledge Check
+Look at this pipeline configuration snippet:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Checking code style"
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running tests"
+
+  deploy:
+    needs: [lint, unit-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying app"
+
+
+Question: If the lint job passes but the unit-tests job fails, will the deploy job run?
+
+No, the deploy job will not run.
+
+Because deploy defines needs: [lint, unit-tests], GitHub Actions requires all prerequisite jobs in the dependency list to succeed (exit 0). If either lint or unit-tests fails, the pipeline immediately halts downstream jobs to prevent broken code from deploying.
+
+
+Quick Scenario Challenge
+You are configuring a deployment job for a critical production system. You want to make sure:
+
+The deployment only proceeds after a senior engineer manually reviews and approves it.
+
+The production database credentials cannot be accessed by feature branch runs.
+
+Which GitHub Actions feature achieves both requirements?
+
+A. Adding runs-on: self-hosted
+
+B. Configuring a GitHub Environment with protection rules and environment-specific secrets
+
+C. Hardcoding the secrets in a .env file and pushing it to Git
+
+answer : B. Configuring a GitHub Environment with protection rules and environment-specific secrets
+
