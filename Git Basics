@@ -1,1 +1,299 @@
+Git is a distributed version control system that tracks changes in your source code over time, allowing you to collaborate, roll back mistakes, and integrate with CI/CD pipelines seamlessly.
+
+The Three Stages of Git
+
+Git manages your work across three main states:
+
+Working Directory: The local folder where you create and edit your files.
+
+Staging Area (Index): A checkpoint where you mark modified files to be included in your next snapshot.
+
+Repository (.git directory): The permanent history where Git stores your committed snapshots.
+
+Essential Git Workflow Commands
+
+Initialize a repository: git init
+
+Turns an existing local project folder into a Git repository.
+
+Check repository status: git status
+
+Shows which files have been modified, untracked, or staged.
+
+Stage files for commit:
+
+git add index.html       # Stages a specific file
+git add .                # Stages all modified files in the current folder
+
+Save a snapshot (Commit): git commit -m "Add homepage header layout"
+
+Records staged changes permanently with a descriptive message.
+
+View history : git log --oneline
+
+Displays a simplified list of past commits.
+
+Branching and Collaboration
+
+Branching allows you to develop new features or fix bugs in isolation without touching the stable main codebase.
+
+Create and switch to a new branch:
+
+git switch -c feature/login
+# Alternatively: git checkout -b feature/login
+
+Merge changes back to main:
+
+git switch main
+git merge feature/login
+
+Sync with a remote server (e.g., GitHub):
+
+git clone <repo-url>: Downloads an entire remote repository to your local machine.
+
+git push origin feature/login: Uploads your local branch commits to GitHub.
+
+git pull origin main: Fetches and integrates the latest changes from the remote server into your current branch.
+
+Quick Check
+
+If you edit an existing file called app.py, which command must you run first before you can save it into your permanent history with git commit?
+
+git add app.py moves the file from your Working Directory to the Staging Area, preparing it for your next snapshot.
+
+Next Step: Committing and Pushing
+
+Once staged, complete the cycle with these two commands:
+
+Commit the staged change locally:
+
+git commit -m "Update logic in app.py"
+
+Push the commit to your remote repository (e.g., GitHub):
+
+git push origin main
+
+
+Why This Matters for CI/CD
+
+In modern DevOps pipelines:
+
+Every time you run git push, your remote repository (like GitHub or GitLab) detects the new commit.
+
+That push automatically triggers automated CI/CD runners to build your code, run unit tests, and verify that nothing broke.
+
+
+what is branching and pull requests (PRs) and how branching and pull requests (PRs) work? 
+
+In modern DevOps and CI/CD pipelines, you never write code directly on the main (production) branch. Instead, every new feature or bug fix follows an isolated Branching -->Pull Request (PR) --> Merge workflow.
+
+1. The 6-Step Branch & PR Workflow
+
+Step 1: Update your local main branch
+Always start with the freshest code from the remote server:
+
+git switch main
+git pull origin main
+
+Step 2: Create and switch to a feature branch
+Keep branches focused on one task and name them clearly (e.g., feature/login-page or fix/auth-bug):
+
+git switch -c feature/add-readme
+
+Step 3: Make changes, stage, and commit
+Make your edits, stage the files, and record a clear commit message:
+
+git add README.md
+git commit -m "Add project setup instructions to README"
+
+Step 4: Push the feature branch to the remote repository
+Upload your branch to GitHub or GitLab:
+
+git push -u origin feature/add-readme
+(The -u or --set-upstream flag tells Git to link this local branch to the remote branch so you can simply run git push or git pull later).
+
+Step 5: Open a Pull Request (PR)
+
+Go to your repository on GitHub/GitLab.
+
+Click Compare & pull request.
+
+Set the base branch to main and the compare branch to feature/add-readme.
+
+Add a clear title and description explaining what you changed and why.
+
+Step 6: Automated CI checks & Code Review
+
+As soon as the PR is opened, the automated CI pipeline runs builds and tests against your branch.
+
+Teammates review your code, leave feedback, or approve the changes.
+
+Once tests pass and approvals are granted, the PR is merged into main.
+
+
+2. Handling Merge Conflicts
+
+A merge conflict occurs when two branches modify the exact same lines in a file, and Git doesn't know which version to keep.
+
+When you run git merge or merge a PR, Git flags conflicting files with conflict markers:
+
+<<<<<<< HEAD (Current branch / main)
+print("Hello, World!")
+=======
+print("Hello, DevOps Engineer!")
+>>>>>>> feature/add-readme
+
+How to resolve it:
+
+Open the conflicting file in your editor.
+
+Choose the code you want to keep and delete the conflict markers (<<<<<<<, =======, >>>>>>>).
+
+Stage and commit the resolved file:
+
+git add .
+git commit -m "Resolve merge conflict in app.py"
+git push origin feature/add-readme
+
+
+Quick Practice Scenario
+
+Imagine you are working on a team. A teammate merged new code into main while you were working on your branch feature/user-auth.
+
+Before opening your Pull Request to avoid conflicts, what is the best sequence of commands to update your local branch with the latest changes from main?
+
+Step 1: Fetch and update your local main
+
+git switch main
+git pull origin main
+
+Step 2: Switch back to your feature branch
+
+git switch feature/user-auth
+
+Step 3: Merge the updated main into your feature branch
+
+git merge main
+
+Step 4: Resolve any conflicts, commit, and push
+
+# Resolve any conflicts in your editor if they appear
+git add .
+git commit -m "Merge latest main into feature/user-auth"
+git push origin feature/user-auth
+
+Why do it this way?
+
+It ensures your local main branch stays up to date with the remote repository.
+
+You test and resolve any merge conflicts safely on your own branch before opening or updating your Pull Request, ensuring the automated CI pipeline runs cleanly on GitHub/GitLab.
+
+1. Ignoring Unwanted Files (.gitignore)
+
+You never want to commit build artifacts, temporary files, environment variables, or dependencies (like node_modules/ or .env files with secret keys).
+
+Create a file named .gitignore in your repository root.
+
+Add patterns to exclude files and folders:
+
+Code snippet
+# Ignore sensitive environment variable files
+.env
+
+# Ignore dependencies and package directories
+node_modules/
+__pycache__/
+*.pyc
+
+# Ignore OS and build output files
+.DS_Store
+dist/
+build/
+
+
+2. Stashing Changes Temporarily (git stash)
+
+If you are in the middle of editing files and need to switch branches urgently without committing unfinished work, use the stash:
+
+Save uncommitted work to the stash: git stash
+
+Restore your stashed changes later: git stash pop
+
+List all stashed items: git stash list
+
+3. Undoing Mistakes Safely
+
+Discard changes in a local file (before staging):
+
+git restore app.py
+Unstage a file (keep the changes in your working directory):
+
+git restore --staged app.py
+Amend the last commit message (before pushing):
+
+git commit --amend -m "Updated commit message"
+Safely undo a pushed commit by creating an inverse commit:
+
+git revert <commit-hash>
+(In DevOps, git revert is preferred over destructive commands like git reset --hard because it preserves shared history).
+
+4. Checking Differences (git diff)
+
+View unstaged changes: git diff
+
+View staged changes (ready to be committed): git diff --staged
+
+Compare two branches:
+
+git diff main feature/user-auth
+
+Quick Practice Scenario
+
+You modified config.py and realized your changes broke everything. You have not run git add yet. Which command restores config.py back to its last committed state?
+
+git restore config.py discards all uncommitted local modifications in config.py and returns it to the exact state of your last commit.
+
+
+Practice Challenge
+
+Suppose you ran git add . and accidentally staged your secret .env file containing API keys, but you have not run git commit yet.
+
+Which command will safely unstage .env without deleting the file from your computer?
+
+git restore --staged .env (or git restore --staged <filename>) removes the file from the Staging Area while keeping all your edits safely intact in your working directory.
+
+Putting It All Together: A Scenario Test
+Let's test everything you've learned so far with a single end-to-end workflow challenge.
+
+Scenario:
+You need to add a new feature to your team's project:
+
+You need to start from an up-to-date main branch.
+
+You need to create and switch to a branch called feature/navbar.
+
+You create a new file navbar.html and edit styles.css.
+
+You need to stage both files, commit them with the message "Add navigation bar", and push the branch to GitHub.
+
+Challenge:
+What sequence of Git commands would you run to complete steps 1 through 4?
+
+# Step 1: Ensure local main is up to date
+git switch main
+git pull origin main
+
+# Step 2: Create and switch to your feature branch
+git switch -c feature/navbar
+
+# Step 3: (Create/edit navbar.html and styles.css in your editor)
+
+# Step 4: Stage both files
+git add navbar.html styles.css
+
+# Step 5: Commit your changes
+git commit -m "Add navigation bar"
+
+# Step 6: Push to the remote repository
+git push -u origin feature/navbar
 

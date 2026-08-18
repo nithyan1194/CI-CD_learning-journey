@@ -1,0 +1,42 @@
+Quiz 1: If you edit an existing file called app.py, which command must you run first before saving it permanently with git commit?
+
+Answer: git add app.py (moves file from working directory to staging area).
+
+Quiz 2: Best way to incorporate latest changes from main into your feature branch before opening a PR?
+
+Answer: Pull the latest main (git switch main && git pull origin main) and merge it into your branch (git switch feature-branch && git merge main).
+
+Quiz 3: You modified config.py, broke the code, and have not staged it yet. How to discard the changes?
+
+Answer: git restore config.py.
+
+Quiz 4: You accidentally staged a secret .env file via git add . before committing. How to unstage it safely without deleting local edits?
+
+Answer: git restore --staged .env.
+
+End-to-End Git Challenge:
+
+Scenario: Update main, create feature/navbar, stage navbar.html and styles.css, commit, and push.
+
+Correct Sequence:
+
+Bash
+git switch main
+git pull origin main
+git switch -c feature/navbar
+git add navbar.html styles.css
+git commit -m "Add navigation bar"
+git push -u origin feature/navbar
+
+
+To resume our quiz check: 
+
+In the GitHub Actions .yml workflow, where does GitHub Actions actually run commands like pytest or pip install?
+
+On your local computer
+On a fresh virtual machine (ubuntu-latest) provided by GitHub
+Directly inside the .git folder
+
+Answer:
+On a fresh virtual machine (ubuntu-latest) provided by GitHub is the correct answer.
+In CI/CD terminology, this machine is called a Runner (or agent).

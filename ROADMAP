@@ -1,0 +1,11 @@
+Learning Roadmap
+
+1. Version Control (Git): Learn basic commands (clone, branch, commit, push, pull), merge conflict resolution, and standard branching strategies.
+
+2. Build & Test Automation: Understand how code compiles, how unit/integration tests run automatically, and what build artifacts are.
+
+3. CI/CD Tools: Get hands-on with a beginner-friendly platform like GitHub Actions or GitLab CI by writing basic .yaml configuration pipelines.
+
+4. Containerization Basics: Learn Docker fundamentals (writing a Dockerfile, building images, and running containers).
+
+5. Deployment Environments: Understand the difference between Development, Staging, and Production environments.

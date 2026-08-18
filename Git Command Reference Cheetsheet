@@ -1,0 +1,43 @@
+Git Command Reference Cheat Sheet
+
+Inspection:
+
+git status — Check modified, staged, and untracked files.
+
+git diff — View unstaged changes line by line.
+
+git diff --staged — View staged changes awaiting commit.
+
+git log --oneline — View a clean, condensed commit history.
+
+Tracking & Staging:
+
+git add <file> — Stage a specific file.
+
+git add . — Stage all changes in the current directory.
+
+git restore --staged <file> — Unstage a file while keeping your local edits.
+
+Committing & Syncing:
+
+git commit -m "message" — Save staged changes to local history.
+
+git push origin <branch> — Upload local commits to the remote repository.
+
+git pull origin <branch> — Fetch and merge remote changes into your local branch.
+
+Branching & Context Switching:
+
+git switch -c <branch> — Create and switch to a new branch.
+
+git switch <branch> — Switch to an existing branch.
+
+git stash — Temporarily shelve uncommitted work.
+
+git stash pop — Reapply shelved changes.
+
+Fixing Mistakes:
+
+git restore <file> — Discard local unstaged changes in a file.
+
+git revert <commit-hash> — Create a new commit that safely inverts a previous commit.

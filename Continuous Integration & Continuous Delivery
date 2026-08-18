@@ -1,0 +1,74 @@
+
+1. The Big Picture: How Git Powers CI/CD
+
+Whenever you push code to a remote repository (like GitHub or GitLab), a CI/CD server listens for that event and automatically triggers a pipeline.
+
+[ Developer Machine ]
+        │  git push
+        ▼
+[ Remote Git Repo (GitHub) ]
+        │  triggers webhook
+        ▼
+[ CI/CD Runner / Server ]
+  ├── 1. Checkout Code
+  ├── 2. Set Up Runtime (Node, Python, Java, etc.)
+  ├── 3. Install Dependencies
+  ├── 4. Run Automated Tests
+  └── 5. Build Artifact / Deploy (if tests pass)
+
+
+  2. Anatomy of a CI/CD Pipeline
+
+Every pipeline is broken down into a hierarchy:
+
+Trigger (Event): What starts the pipeline (e.g., git push, opening a PR, or a scheduled timer).
+
+Workflow / Pipeline: The complete automated process defined in a configuration file (usually in YAML format).
+
+Jobs: A set of execution steps that run on a fresh virtual server (a Runner or agent).
+
+Steps / Actions: Individual tasks inside a job, such as running a shell script or downloading an action.
+
+3. Your First CI Pipeline: GitHub Actions
+
+GitHub Actions uses .github/workflows/ directory in your repository to store pipeline configuration files.
+
+Here is a minimal, beginner-friendly pipeline file named .github/workflows/ci.yml:
+
+name: Run Tests and Build
+
+# 1. When to run: Trigger on any push to 'main'
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# 2. What to run
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest  # Spawns a clean Linux virtual machine
+
+    steps:
+      # Step 1: Copy your repository code into the runner
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the programming environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 4: Run automated tests
+      - name: Run unit tests
+        run: |
+          pytest
+
+
