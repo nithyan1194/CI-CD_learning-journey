@@ -1,0 +1,197 @@
+### What is Docker and Why Do We Use It?
+In traditional deployments, you install runtimes, libraries, and dependencies directly onto a server. If the server has a slightly different Python or Node.js version than your local laptop, the app can crash.
+
+### Containers: 
+Lightweight, standalone packages that contain everything your application needs to run—the code, system tools, libraries, and runtime environment.
+
+### Containers vs. Virtual Machines (VMs):
+
+Virtual Machines: Heavyweight; each VM bundles a full guest Operating System (OS), taking gigabytes of storage and minutes to boot.
+
+Containers: Share the host system's OS kernel, starting in seconds and consuming far fewer resources.
+
+### The Three Core Docker Concepts
+Dockerfile: A text recipe containing step-by-step instructions on how to assemble your application environment.
+
+Docker Image: The read-only snapshot built from the Dockerfile (an immutable artifact).
+
+Docker Container: A running instance of an image. You can run multiple containers from a single image.
+
+### Anatomy of a Simple Dockerfile
+Here is a standard Dockerfile for a Python web application:
+
+# 1. Base Image: Start with an official lightweight Python runtime
+FROM python:3.11-slim
+
+# 2. Working Directory: Set the internal folder where commands run inside the container
+WORKDIR /app
+
+# 3. Copy Dependency File: Copy requirements first to take advantage of layer caching
+COPY requirements.txt .
+
+# 4. Install Dependencies: Run commands during the image build process
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. Copy Application Code: Copy the rest of your local files into /app
+COPY . .
+
+# 6. Expose Port: Document the network port the application listens on
+EXPOSE 5000
+
+# 7. Default Command: The command to execute when the container starts up
+CMD ["python", "app.py"]
+
+### Essential Docker CLI Commands
+
+Build an image:
+
+docker build -t my-app:v1 .
+
+(The -t tags your image with a name and version; . indicates the current directory containing the Dockerfile.)
+
+Run a container:
+
+docker run -d -p 8080:5000 --name my-running-app my-app:v1
+
+-d: Run in detached mode (background).
+
+-p 8080:5000: Map port 8080 on your host machine to port 5000 inside the container.
+
+--name: Give the running container a friendly name.
+
+Check running containers:
+
+docker ps
+Stop and remove a container:
+
+docker stop my-running-app
+docker rm my-running-app
+
+Quick Check
+In a Dockerfile, what is the key difference between the RUN instruction and the CMD instruction?
+
+RUN executes commands while building the image, while CMD is the default command executed when the container actually starts.
+
+RUN is only for Linux commands, while CMD is only for Windows commands.
+
+RUN starts the web server, while CMD installs dependencies.
+
+Option 1 is correct.
+
+RUN (Build-Time): Executes during the image creation phase (e.g., RUN pip install -r requirements.txt or RUN apt-get update). The results of these commands are baked permanently into the Docker image layers.
+
+CMD (Run-Time): Sets the default instruction that executes when a container is launched from the image (e.g., CMD ["python", "app.py"]). It does not run during image build time and can be overridden when running docker run.
+
+Docker Layer Caching (CI/CD Optimization)
+Each line in a Dockerfile creates a layer. Docker caches these layers to speed up subsequent builds. If a layer hasn't changed, Docker reuses the cached version instead of rebuilding it.
+
+Notice the order of commands in our earlier Dockerfile:
+
+# Step 1: Copy only dependency definitions
+COPY requirements.txt .
+
+# Step 2: Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Step 3: Copy source code
+COPY . .
+
+Why this order matters:
+
+Your source code changes frequently with every commit.
+
+Your dependencies (requirements.txt) change infrequently.
+
+By copying requirements.txt and running pip install before copying your source code (COPY . .), Docker caches the heavy installation step. Subsequent builds take seconds instead of minutes unless dependencies actually change.
+
+### How Docker Fits into a CI/CD Pipeline
+In a modern CI/CD workflow, pipelines build and publish Docker container images to a Container Registry (like Docker Hub, GitHub Container Registry ghcr.io, AWS ECR, or Google Artifact Registry):
+
+[ Developer Push ] ──► [ GitHub Actions ]
+                            ├── 1. Run Unit Tests
+                            ├── 2. Build Docker Image
+                            └── 3. Push Image to Container Registry (e.g., ghcr.io/org/app:v1)
+                                        │
+                                        ▼
+                               [ Target Server / Cloud ]
+                               (Pulls image & runs container)
+## Docker in GitHub Actions Example
+Here is how a pipeline step builds and pushes a Docker image:
+
+YAML
+    steps:
+      - uses: actions/checkout@v4
+
+      # Log in to Docker Registry using repository secrets
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build and Push the Container Image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: myusername/myapp:${{ github.sha }}
+
+## Quick Scenario Challenge
+You change a single line of text in app.py and run docker build. Because of how the Dockerfile was structured above:
+
+Does Docker rerun RUN pip install -r requirements.txt during this build?
+
+Yes, Docker rebuilds everything from scratch on every run.
+
+No, Docker uses the cached layer for the pip install step and only rebuilds the layers from COPY . . onwards.
+
+Option 2 is correct.
+
+Because requirements.txt was not modified, Docker identifies that the cache for COPY requirements.txt . and RUN pip install ... remains valid. It reuses those cached layers and only executes the build steps from COPY . . downward, saving significant time during pipeline execution.
+
+### Deployment Strategies
+Once your container image is built, tested, and pushed to a registry, the final stage of CD (Continuous Delivery/Deployment) is releasing it to your production servers.
+
+Here are the primary deployment strategies used in DevOps:
+
+Recreate (Downtime Deployment):
+
+Shuts down all old version containers first, then starts new version containers.
+
+Trade-off: Simple, but causes downtime for users.
+
+Rolling Update (Zero Downtime):
+
+Gradually replaces instances of the old version with the new version one by one behind a load balancer.
+
+Trade-off: Zero downtime, but both old and new versions run simultaneously during the rollout.
+
+Blue-Green Deployment:
+
+Runs two identical environments: Blue (current live version) and Green (new version).
+
+Traffic is switched all at once via a router or load balancer to Green after validation.
+
+Trade-off: Instant rollbacks (just switch traffic back), but requires double the infrastructure resources.
+
+Canary Deployment:
+
+Routes a tiny percentage of real user traffic (e.g., 5%) to the new version to monitor error rates and performance before rolling it out to 100% of users.
+
+Quick Scenario Challenge
+You are deploying a mission-critical banking application where zero downtime is required and you need the ability to roll back instantly to the old version with a single router configuration if a bug occurs.
+
+Which deployment strategy is best suited for this?
+
+A. Recreate
+
+B. Blue-Green Deployment
+
+C. Manual SSH Deployment
+
+
+Option B: Blue-Green Deployment is correct.
+
+Why: By keeping the old version running on Blue while testing the new version on Green, switching production traffic over via the router is instantaneous and ensures zero downtime. If any issue arises, rolling back is as simple as flipping the router back to point at the Blue environment.
+

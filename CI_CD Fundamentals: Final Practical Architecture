@@ -1,0 +1,14 @@
+1. Code & Collaborate:
+   git switch -c feature/branch ──► Commit ──► Push ──► Open Pull Request
+
+2. Continuous Integration (CI):
+   GitHub Runner spawns ──► Checkout ──► Install Deps ──► Run Automated Tests
+
+3. Containerization:
+   Build Docker Image (Layer Caching) ──► Push to Container Registry (ghcr.io / Docker Hub)
+
+4. Continuous Delivery / Deployment (CD):
+   Deploy to Staging ──► Manual Gate Approval ──► Rolling / Blue-Green Deploy to Production
+
+
+
