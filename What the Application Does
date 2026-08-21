@@ -1,0 +1,35 @@
+The application inside app/main.py serves two primary endpoints:
+
+1. Root Endpoint (/) — Welcome & Status Route
+
+Route: GET /
+
+Response:
+
+JSON
+{
+  "status": "online",
+  "message": "DevOps CI/CD Pipeline Active!"
+}
+Purpose: Acts as the default landing route to verify that the web server is reachable and running.
+
+2. Health Check Endpoint (/health) — DevOps Probe Route
+
+Route: GET /health
+
+Response: HTTP status 200 OK
+
+JSON
+{
+  "status": "healthy"
+}
+Purpose: In production systems, cloud platforms, container orchestrators (like Kubernetes), and load balancers continuously ping this endpoint.
+
+If it responds with 200 OK, traffic is sent to the container.
+
+If it fails or stops responding, the platform knows the container crashed or froze and will automatically restart or replace it.
+
+How It Serves Traffic
+The server runs on port 5000 (host="0.0.0.0").
+
+Inside the container, Docker exposes this port (EXPOSE 5000) so incoming web requests can reach the Flask server from outside the container.
