@@ -1,0 +1,27 @@
+Once your container image is built, tested, and pushed to a registry, the final stage of CD (Continuous Delivery/Deployment) is releasing it to your production servers.
+
+Here are the primary deployment strategies used in DevOps:
+
+Recreate (Downtime Deployment):
+
+Shuts down all old version containers first, then starts new version containers.
+
+Trade-off: Simple, but causes downtime for users.
+
+Rolling Update (Zero Downtime):
+
+Gradually replaces instances of the old version with the new version one by one behind a load balancer.
+
+Trade-off: Zero downtime, but both old and new versions run simultaneously during the rollout.
+
+Blue-Green Deployment:
+
+Runs two identical environments: Blue (current live version) and Green (new version).
+
+Traffic is switched all at once via a router or load balancer to Green after validation.
+
+Trade-off: Instant rollbacks (just switch traffic back), but requires double the infrastructure resources.
+
+Canary Deployment:
+
+Routes a tiny percentage of real user traffic (e.g., 5%) to the new version to monitor error rates and performance before rolling it out to 100% of users.
