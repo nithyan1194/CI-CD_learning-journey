@@ -1,0 +1,228 @@
+This guide covers core DevOps principles, essential tooling, containerization, and a complete step-by-step walkthrough to build, test, and containerize a microservice using GitHub Actions.
+
+### 1. Core DevOps & CI/CD Concepts
+What is DevOps?
+DevOps is a set of cultural philosophies, practices, and tools that combines software development (Dev) and IT operations (Ops) to deliver applications at high velocity with automated reliability.
+
+What is CI/CD?
+Continuous Integration (CI): Developers commit and merge code frequently to a shared repository. Every push triggers automated builds and automated test suites. Bugs are caught immediately before code is merged.
+
+Continuous Delivery (CD): Once CI tests pass, the application is packaged (e.g., into an immutable Docker image) and automatically deployed to staging or prepared for production release with minimal manual overhead.
+
+Continuous Deployment (Advanced CD): Every validated change that passes all testing stages automatically releases straight to production without manual approvals.
+
+Plaintext
+[ Developer Machine ] 
+       │ git push
+       ▼
+[ Remote Repository (GitHub) ]
+       │ Triggers Webhook
+       ▼
+[ CI Runner (GitHub Actions VM) ]
+       ├── 1. Checkout Code
+       ├── 2. Set Up Runtime (Python, Node, etc.)
+       ├── 3. Install Dependencies
+       ├── 4. Run Automated Test Suite (CI)
+       └── 5. IF Tests Pass ──► Build Docker Image (CD)
+
+
+### 2. The Tooling Stack
+
+Tool	Category	Role in the Workflow
+Git & GitHub	Version Control	Tracks source code changes, branches features, and coordinates collaboration.
+Flask (Python)	Web Framework	Lightweight REST API serving application endpoints and health check probes.
+Pytest	Testing Framework	Executes automated assertions to validate logic and route behavior.
+Docker	Containerization	Packages the application and its dependencies into a portable, isolated container image.
+GitHub Actions	CI/CD Automation	Cloud-based runner that triggers workflows on pushes and pull requests.
+
+
+### 3. Deployment Strategies Overview
+Recreate (Downtime): Shuts down old containers completely before launching new ones. Causes brief downtime.
+
+Rolling Update (Zero Downtime): Progressively spins up new containers while terminating old containers one by one behind a load balancer.
+
+Blue-Green Deployment: Maintains two identical production environments (Blue = live, Green = new build). Traffic is switched instantaneously via the router once the Green environment passes validation. Allows instant rollback if bugs emerge.
+
+Canary Deployment: Routes a tiny percentage of live user traffic (e.g., 5%) to the new version to monitor errors and performance before rolling it out to 100% of users.
+
+### 4. End-to-End Hands-On Project: flask-cicd-pipeline
+Project Layout
+Create the following file structure on your computer:
+
+Plaintext
+devops-starter-project/
+├── .github/
+│   └── workflows/
+│       └── pipeline.yml       # CI/CD pipeline definition
+├── app/
+│   ├── __init__.py           # Python package marker (empty)
+│   └── main.py               # Flask application & API routes
+├── tests/
+│   └── test_main.py          # Pytest unit tests
+├── .gitignore                # Untracked files/cache ignore list
+├── Dockerfile                # Layer-cached Docker image instructions
+└── requirements.txt          # Third-party dependencies
+Step 1: Application Dependencies
+requirements.txt
+
+Plaintext
+flask==3.0.3
+pytest==8.2.2
+Step 2: Application Source Code
+app/__init__.py
+(Keep this file empty. It indicates that app is a valid Python package module).
+
+app/main.py
+
+Python
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return jsonify({"status": "online", "message": "DevOps CI/CD Pipeline Active!"})
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "healthy"}), 200
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+Step 3: Automated Unit Tests
+tests/test_main.py
+
+Python
+import pytest
+from app.main import app
+
+@pytest.fixture
+def client():
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        yield client
+
+def test_home_route(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json["status"] == "online"
+
+def test_health_check(client):
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json["status"] == "healthy"
+Step 4: Git Ignore Rules
+.gitignore
+
+Code snippet
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+venv/
+.DS_Store
+Step 5: Containerfile (Dockerfile)
+Dockerfile
+
+Dockerfile
+# 1. Base image
+FROM python:3.11-slim
+
+# 2. Set working directory inside container
+WORKDIR /app
+
+# 3. Copy dependencies and install (leveraging Docker layer caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 4. Copy application source code
+COPY app/ ./app
+
+# 5. Expose application port
+EXPOSE 5000
+
+# 6. Default execution command
+CMD ["python", "app/main.py"]
+Step 6: GitHub Actions Workflow Definition
+Create the workflow file inside .github/workflows/pipeline.yml.
+
+.github/workflows/pipeline.yml
+
+YAML
+name: Build, Test, and Containerize
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # JOB 1: Continuous Integration (Automated Testing)
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v5.4.0
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Pytest Suite
+        run: |
+          python -m pytest
+
+  # JOB 2: Continuous Delivery (Docker Image Packaging)
+  build-and-package:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Build Docker Image Locally (Validation)
+        run: |
+          docker build -t devops-flask-app:${{ github.sha }} .
+          echo "Docker image built successfully with tag ${{ github.sha }}"
+### 5. Local Execution & Pushing to GitHub
+1. Initialize and Commit Locally
+From inside your devops-starter-project folder:
+
+Bash
+git init
+git add .
+git commit -m "Initial commit: Flask app, tests, Dockerfile, and CI pipeline"
+2. Connect to GitHub and Push
+Create a repository on GitHub (e.g., devops-starter-project or flask-cicd-pipeline).
+
+Link your remote repository and push:
+
+Bash
+git branch -M main
+git remote add origin https://github.com/<YOUR-USERNAME>/<REPO-NAME>.git
+git push -u origin main
+### 6. Common Pitfalls & Solutions
+GitHub Authentication & Token Scopes (Error 403 / remote rejected):
+
+When using a Personal Access Token (PAT), ensure you check both the repo and workflow scopes. GitHub blocks pushes containing .github/workflows/ files if the token lacks explicit workflow authorization.
+
+Pytest Module Pathing (ModuleNotFoundError: No module named 'app'):
+
+Use python -m pytest instead of plain pytest in your CI scripts. This ensures Python automatically appends the current working directory to sys.path.
+
+Docker Layer Caching Optimization:
+
+Always copy requirements.txt and run pip install before copying your application files (COPY app/ ./app). If only source code changes, Docker skips dependency installation and reuses the cached layer.
