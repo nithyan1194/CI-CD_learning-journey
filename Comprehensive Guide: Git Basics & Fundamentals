@@ -1,0 +1,168 @@
+This guide covers everything you need to know about Git, from core architecture to day-to-day branching, merging, and remote collaboration workflows.
+
+### 1. What is Git & Why Do We Use It?
+Git is a distributed version control system (VCS) that tracks changes in your source code over time.
+
+Version History: Allows you to revert to any previous state of your project if bugs occur.
+
+Branching & Collaboration: Lets multiple developers work on separate features concurrently without overwriting each other's code.
+
+Distributed Nature: Every developer has a full copy of the project repository, commit history, and branches locally on their machine.
+
+### 2. Git Architecture: The Three Main Stages
+Git tracks files through three distinct local stages before they reach a remote repository (like GitHub):
+
+Plaintext
+┌────────────────────────┐      git add       ┌──────────────────────┐     git commit     ┌────────────────────────┐
+│    Working Directory   │ ─────────────────► │    Staging Area      │ ─────────────────► │    Local Repository    │
+│  (Untracked/Modified)  │                    │       (Index)        │                    │      (Committed)       │
+└────────────────────────┘                    └──────────────────────┘                    └────────────────────────┘
+                                                                                                      │
+                                                                                                      │ git push
+                                                                                                      ▼
+                                                                                          ┌────────────────────────┐
+                                                                                          │   Remote Repository    │
+                                                                                          │    (e.g., GitHub)      │
+                                                                                          └────────────────────────┘
+1. Working Directory: The actual files you see and edit in your file explorer or code editor. Files here are either untracked (new) or modified.
+
+2. Staging Area (Index): The draft area. You selectively choose which changes should be included in the next snapshot.
+
+3. Local Repository (.git folder): Stores the permanent snapshots (commits) locally on your machine.
+
+4. Remote Repository: The hosted copy of your code on platforms like GitHub, GitLab, or Bitbucket.
+
+### 3. Core Git Commands Cheat Sheet
+Initializing & Configuring
+Check current status:
+
+Bash
+git status
+Shows untracked files, modified files, and staged changes.
+
+Initialize a new Git repository:
+
+Bash
+git init
+Creates a hidden .git folder in your project root.
+
+Set your global user details:
+
+Bash
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+Staging & Committing
+Stage specific files:
+
+Bash
+git add app/main.py
+Stage all files and directories in current folder:
+
+Bash
+git add .
+Commit staged files with a descriptive message:
+
+Bash
+git commit -m "Add health check endpoint to Flask API"
+View commit history:
+
+Bash
+git log --oneline
+Branching & Switching
+Branches allow you to develop features, fix bugs, or experiment in isolation without affecting the stable main branch.
+
+Create and switch to a new branch:
+
+Bash
+git switch -c feature/login-page
+# Or the legacy command:
+git checkout -b feature/login-page
+Switch between existing branches:
+
+Bash
+git switch main
+# Or:
+git checkout main
+List all local branches:
+
+Bash
+git branch
+Rename the current active branch (e.g., to main):
+
+Bash
+git branch -M main
+Merging & Pull Requests
+Merge a feature branch into the current active branch:
+
+Bash
+# Step 1: Switch to the destination branch
+git switch main
+
+# Step 2: Merge the feature branch
+git merge feature/login-page
+Delete a branch locally after merging:
+
+Bash
+git branch -d feature/login-page
+Remote Repositories (Connecting to GitHub)
+View currently linked remotes:
+
+Bash
+git remote -v
+Add a new remote link (named origin):
+
+Bash
+git remote add origin https://github.com/<USERNAME>/<REPO-NAME>.git
+Update an existing remote link:
+
+Bash
+git remote set-url origin https://github.com/<USERNAME>/<REPO-NAME>.git
+Remove an existing remote:
+
+Bash
+git remote remove origin
+Push code to the remote repository:
+
+Bash
+# First push (sets upstream tracking '-u'):
+git push -u origin main
+
+# Subsequent pushes:
+git push
+Pull latest changes from the remote repository:
+
+Bash
+git pull origin main
+### 4. The .gitignore File
+The .gitignore file tells Git which files, folders, and build artifacts it should completely ignore and never track.
+
+Why is this essential?
+
+Prevents sensitive secrets (e.g., .env files with API keys/passwords) from being committed.
+
+Prevents heavy local dependencies and caches (e.g., venv/, node_modules/, __pycache__/) from cluttering your repository.
+
+Example .gitignore:
+
+Code snippet
+# Python cache & virtual environments
+__pycache__/
+*.pyc
+venv/
+.pytest_cache/
+
+# Environment files with secrets
+.env
+
+# OS-specific clutter
+.DS_Store
+Thumbs.db
+### 5. Typical Feature Branch Workflow (The Standard DevOps Pattern)
+Plaintext
+1. git switch -c feature/new-api-endpoint   # Create feature branch
+2. # Write code and unit tests...
+3. git add .                               # Stage changes
+4. git commit -m "Implement endpoint"      # Create snapshot
+5. git push -u origin feature/new-api-endpoint # Push branch to GitHub
+6. Open a Pull Request (PR) on GitHub      # Automated CI tests run!
+7. Code Review & Merge into 'main'         # Merged & automatically deployed!
